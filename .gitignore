@@ -5,3 +5,8 @@
 
 # Excluye carpeta FreeRTOS_TAD_logs
 /FreeRTOS_TAD_logs/
+
+#Excluye carpetas temporales debug/release
+/FRDMKL02Z_MMA8451/Debug/
+/FRDMKL02Z_MMA8451/Release/
+/FRDMKL02Z_MMA8451/Doc/
