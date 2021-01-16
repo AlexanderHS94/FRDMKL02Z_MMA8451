@@ -1,0 +1,2 @@
+# FRDMKL02Z_MMA8451
+Demo acelerometro MMA8451 en FRDMKO2Z
