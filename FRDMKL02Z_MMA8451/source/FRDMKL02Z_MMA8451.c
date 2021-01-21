@@ -39,6 +39,17 @@
 #include "clock_config.h"
 #include "MKL02Z4.h"
 #include "fsl_debug_console.h"
+#include "sdk_hal_gpio.h"
+#include "sdk_hal_uart0.h"
+#include "sdk_hal_i2c0.h"
+/*******************************************************************************
+ * Definitions
+ ******************************************************************************/
+#define MMA8451_I2C_DEVICE_ADDRESS	0x1D
+
+#define MMA8451_WHO_AM_I_MEMORY_ADDRESS		0x0D
+
+
 /* TODO: insert other include files here. */
 
 /* TODO: insert other definitions and declarations here. */
@@ -47,6 +58,9 @@
  * @brief   Application entry point.
  */
 int main(void) {
+	status_t status;
+    uint8_t nuevo_byte_uart;
+	uint8_t	nuevo_dato_i2c;
 
   	/* Init board hardware. */
     BOARD_InitBootPins();
@@ -57,16 +71,65 @@ int main(void) {
     BOARD_InitDebugConsole();
 #endif
 
-    PRINTF("Hello World\n");
 
-    /* Force the counter to be placed into memory. */
-    volatile static int i = 0 ;
-    /* Enter an infinite loop, just incrementing a counter. */
+    (void)uart0Inicializar(115200);	//115200bps
+    (void)i2c0MasterInit(100000);	//100kbps
+
+
+    PRINTF("Usar teclado para controlar LEDs\r\n");
+    PRINTF("r-R led ROJO\r\n");
+    PRINTF("v-V led VERDE\r\n");
+    PRINTF("a-A led AZUL\r\n");
+    PRINTF("M buscar acelerometro\r\n");
+
+
+
+    //coloca el pin PTB7 en alto
+    status=gpioPutLow(KPTB7);
+
+    if(status!=kStatus_Success)
+    	printf("error de operacion");
+
     while(1) {
-        i++ ;
-        /* 'Dummy' NOP to allow source level single stepping of
-            tight while() loop */
-        __asm volatile ("nop");
+    	if(uart0CuantosDatosHayEnBuffer()>0){
+    		status=uart0LeerByteDesdeBuffer(&nuevo_byte_uart);
+    		if(status==kStatus_Success){
+    			printf("dato:%c\r\n",nuevo_byte_uart);
+    			switch (nuevo_byte_uart) {
+				case 'a':
+				case 'A':
+					gpioPutToggle(KPTB10);
+					break;
+
+				case 'v':
+					gpioPutHigh(KPTB7);
+					break;
+				case 'V':
+					gpioPutLow(KPTB7);
+					break;
+
+				case 'r':
+					gpioPutValue(KPTB6,1);
+					break;
+				case 'R':
+					gpioPutValue(KPTB6,0);
+					break;
+
+				case 'M':
+				i2c0MasterReadByte(&nuevo_dato_i2c, MMA8451_I2C_DEVICE_ADDRESS, MMA8451_WHO_AM_I_MEMORY_ADDRESS);
+
+				if(nuevo_dato_i2c==0x1A)
+			     	printf("MMA8451 encontrado!!\r\n");
+					else
+					printf("MMA8451 error\r\n");
+
+					break;
+
+				}
+    		}else{
+    			printf("error\r\n");
+    		}
+    	}
     }
     return 0 ;
 }
